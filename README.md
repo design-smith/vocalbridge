@@ -4,7 +4,9 @@ A production-grade, multi-tenant AI agent gateway that provides reliable, billed
 
 ## Demo Video
 
-🎥 **[Watch the full demo video](./VBDemo.mp4)**
+🎥 **[Watch the full demo video on YouTube](https://youtu.be/nxXcfsgOsYo)**
+
+[![VocalBridge Demo](https://img.youtube.com/vi/nxXcfsgOsYo/maxresdefault.jpg)](https://youtu.be/nxXcfsgOsYo)
 
 ## Screenshots
 
