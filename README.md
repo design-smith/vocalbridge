@@ -65,7 +65,7 @@ VocalBridge Ops is a backend-for-frontend (BFF) system that allows multiple tena
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/design-smith/vocalbridge.git
 cd StitchFinTH
 
 # Install backend dependencies
