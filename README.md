@@ -4,13 +4,11 @@ A production-grade, multi-tenant AI agent gateway that provides reliable, billed
 
 ## Demo Video
 
-🎥 Watch the full demo below or [view on YouTube](https://youtu.be/nxXcfsgOsYo)
 
-<video src="https://github.com/design-smith/vocalbridge/assets/VBDemo.mp4" controls="controls" style="max-width: 100%;">
-  Your browser does not support the video tag.
-</video>
 
-Alternatively, download [VBDemo.mp4](./VBDemo.mp4) to watch locally.
+https://github.com/user-attachments/assets/ce196c2b-208b-422c-8bad-b356b2a98f3e
+
+
 
 ## Screenshots
 
