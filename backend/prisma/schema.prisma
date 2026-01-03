@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// TENANT & AUTHENTICATION
+// ============================================
+
+model Tenant {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+
+  // Relations
+  apiKeys             ApiKey[]
+  agents              Agent[]
+  sessions            Session[]
+  messages            Message[]
+  providerCallEvents  ProviderCallEvent[]
+  usageEvents         UsageEvent[]
+  idempotencyRecords  IdempotencyRecord[]
+
+  @@map("tenants")
+}
+
+model ApiKey {
+  id         String    @id
+  tenantId   String
+  keyHash    String    @unique
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("api_keys")
+}
+
+// ============================================
+// AGENTS & CONFIGURATION
+// ============================================
+
+model Agent {
+  id               String   @id
+  tenantId         String
+  name             String
+  primaryProvider  String   // "vendorA" | "vendorB"
+  fallbackProvider String?  // "vendorA" | "vendorB" | null
+  systemPrompt     String
+  enabledToolsJson String   @default("[]") // JSON array
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions           Session[]
+  providerCallEvents ProviderCallEvent[]
+  usageEvents        UsageEvent[]
+
+  @@index([tenantId])
+  @@map("agents")
+}
+
+// ============================================
+// SESSIONS & CONVERSATIONS
+// ============================================
+
+model Session {
+  id             String   @id
+  tenantId       String
+  agentId        String
+  customerId     String
+  metadataJson   String   @default("{}")
+  status         String   @default("active") // "active" | "closed"
+  createdAt      DateTime @default(now())
+  lastActivityAt DateTime @default(now())
+
+  // Relations
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agent              Agent               @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  messages           Message[]
+  providerCallEvents ProviderCallEvent[]
+  usageEvents        UsageEvent[]
+  idempotencyRecords IdempotencyRecord[]
+
+  @@index([tenantId])
+  @@index([agentId])
+  @@index([customerId])
+  @@map("sessions")
+}
+
+model Message {
+  id        String   @id
+  tenantId  String
+  sessionId String
+  role      String   // "user" | "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ============================================
+// PROVIDER EVENTS & RELIABILITY
+// ============================================
+
+model ProviderCallEvent {
+  id           String    @id
+  tenantId     String
+  sessionId    String
+  agentId      String
+  provider     String    // "vendorA" | "vendorB"
+  status       String    // "success" | "failed"
+  httpStatus   Int?
+  latencyMs    Int?
+  retries      Int       @default(0)
+  errorCode    String?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+  requestId    String
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agent   Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@index([requestId])
+  @@index([createdAt])
+  @@map("provider_call_events")
+}
+
+// ============================================
+// USAGE & BILLING
+// ============================================
+
+model UsageEvent {
+  id        String   @id
+  tenantId  String
+  sessionId String
+  agentId   String
+  provider  String   // "vendorA" | "vendorB"
+  tokensIn  Int
+  tokensOut Int
+  costUsd   Float
+  createdAt DateTime @default(now())
+  requestId String
+
+  // Relations
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agent   Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@index([agentId])
+  @@index([createdAt])
+  @@map("usage_events")
+}
+
+// ============================================
+// IDEMPOTENCY
+// ============================================
+
+model IdempotencyRecord {
+  id              String    @id
+  tenantId        String
+  scope           String    // "send_message"
+  idempotencyKey  String
+  sessionId       String?
+  requestHash     String
+  responseJson    String?
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Unique constraint for idempotency enforcement
+  @@unique([tenantId, scope, idempotencyKey])
+  @@index([tenantId])
+  @@index([sessionId])
+  @@map("idempotency_records")
+}
